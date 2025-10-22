@@ -1,0 +1,4 @@
+# Force JSON content type for extensionless files
+<Files "servers">
+    ForceType application/json
+</Files>
