@@ -82,14 +82,36 @@
         
         .server-header {
             margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .server-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        
+        .server-info {
+            flex: 1;
+            min-width: 0;
         }
         
         .server-name {
             font-size: 1.3em;
             font-weight: 700;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             word-break: break-word;
+        }
+        
+        .server-repo {
+            font-size: 0.85em;
+            color: #888;
+            font-family: 'Courier New', monospace;
         }
         
         .server-description {
@@ -252,8 +274,21 @@
     </div>
 
     <script>
-        // Function to generate VS Code installation URLs
-        function generateVSCodeUrl(serverData) {
+        // Function to generate VS Code installation URL
+        // For Insiders, use 'vscode-insiders' instead of 'vscode'
+        function generateVSCodeUrl(serverData, isInsiders = false) {
+            const protocol = isInsiders ? 'vscode-insiders' : 'vscode';
+            
+            // Get metadata from _meta
+            const publisherProvided = serverData._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
+            const githubInfo = publisherProvided?.github;
+            
+            // Only proceed if we have GitHub metadata
+            if (!githubInfo) {
+                console.warn('No GitHub metadata found for server:', serverData.name);
+                return '#';
+            }
+            
             // Determine command based on package type
             let command = 'npx';
             let args = ['-y'];
@@ -271,76 +306,65 @@
                 args.push(firstPackage.identifier);
             }
             
-            // Build manifest without README to keep URL short
-            const publisherProvided = serverData._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
-            const githubInfo = publisherProvided?.github;
-            
+            // Build manifest using only metadata from _meta
             const manifest = {
                 name: serverData.name,
-                displayName: githubInfo?.display_name || serverData.name,
-                description: serverData.description || 'MCP Server',
-                publisher: serverData.name.split('/')[0],
-                version: serverData.version || '1.0.0',
-                icon: githubInfo?.owner_avatar_url || githubInfo?.preferred_image,
-                license: githubInfo?.license || 'MIT',
-                repository: serverData.repository?.url || `https://github.com/${serverData.name}`,
-                homepage: githubInfo?.homepage_url || serverData.repository?.url,
                 config: {
                     command: command,
                     args: args
                 }
             };
             
+            // Add display name if available
+            if (githubInfo.display_name) {
+                manifest.displayName = githubInfo.display_name;
+            }
+            
+            // Add description
+            if (serverData.description) {
+                manifest.description = serverData.description;
+            }
+            
+            // Add publisher (extract from name)
+            if (serverData.name) {
+                manifest.publisher = serverData.name.split('/')[0];
+            }
+            
+            // Add version
+            if (serverData.version) {
+                manifest.version = serverData.version;
+            }
+            
+            // Add icon (avatar)
+            if (githubInfo.preferred_image || githubInfo.owner_avatar_url) {
+                manifest.icon = githubInfo.preferred_image || githubInfo.owner_avatar_url;
+            }
+            
+            // Add license
+            if (githubInfo.license) {
+                manifest.license = githubInfo.license;
+            }
+            
+            // Add repository URL
+            if (serverData.repository?.url) {
+                manifest.repository = serverData.repository.url;
+            }
+            
+            // Add homepage
+            if (serverData.repository?.url) {
+                manifest.homepage = serverData.repository.url;
+            }
+            
             // Add topics as keywords if available (limit to keep URL size down)
-            if (githubInfo?.topics && githubInfo.topics.length > 0) {
+            if (githubInfo.topics && githubInfo.topics.length > 0) {
                 manifest.keywords = githubInfo.topics.slice(0, 5);
             }
             
-            const encodedManifest = encodeURIComponent(JSON.stringify(manifest));
-            return `vscode:mcp/install?${encodedManifest}`;
-        }
-        
-        function generateVSCodeInsidersUrl(serverData) {
-            // Build manifest without README to keep URL short
-            const publisherProvided = serverData._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
-            const githubInfo = publisherProvided?.github;
-            
-            let command = 'npx';
-            let args = ['-y'];
-            
-            const firstPackage = serverData.packages && serverData.packages[0];
-            
-            if (firstPackage) {
-                if (firstPackage.registry_type === 'pypi') {
-                    command = 'uvx';
-                    args = [];
-                }
-                args.push(firstPackage.identifier);
-            }
-            
-            const manifest = {
-                name: serverData.name,
-                displayName: githubInfo?.display_name || serverData.name,
-                description: serverData.description || 'MCP Server',
-                publisher: serverData.name.split('/')[0],
-                version: serverData.version || '1.0.0',
-                icon: githubInfo?.owner_avatar_url || githubInfo?.preferred_image,
-                license: githubInfo?.license || 'MIT',
-                repository: serverData.repository?.url || `https://github.com/${serverData.name}`,
-                homepage: githubInfo?.homepage_url || serverData.repository?.url,
-                config: {
-                    command: command,
-                    args: args
-                }
-            };
-            
-            // Add topics as keywords if available (limit to keep URL size down)
-            if (githubInfo?.topics && githubInfo.topics.length > 0) {
-                manifest.keywords = githubInfo.topics.slice(0, 5);
-            }
-            
-            const encodedManifest = encodeURIComponent(JSON.stringify(manifest));
-            return `vscode-insiders:mcp/install?${encodedManifest}`;
+            const url = `${protocol}:mcp/install?${encodeURIComponent(JSON.stringify(manifest))}`;
+            console.log(`Generated ${isInsiders ? 'VS Code Insiders' : 'VS Code'} URL:`, url);
+            console.log('Manifest:', manifest);
+
+            return url;
         }
         
         // Function to create a server tile
@@ -348,12 +372,41 @@
             const tile = document.createElement('div');
             tile.className = 'server-tile';
             
+            // Get metadata from _meta
+            const publisherProvided = server._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
+            const githubInfo = publisherProvided?.github;
+            
             const header = document.createElement('div');
             header.className = 'server-header';
             
+            // Add avatar if available
+            const avatarUrl = githubInfo?.preferred_image || githubInfo?.owner_avatar_url;
+            if (avatarUrl) {
+                const avatar = document.createElement('img');
+                avatar.className = 'server-avatar';
+                avatar.src = avatarUrl;
+                avatar.alt = githubInfo?.display_name || server.name;
+                avatar.onerror = function() {
+                    this.style.display = 'none';
+                };
+                header.appendChild(avatar);
+            }
+            
+            // Create info container
+            const info = document.createElement('div');
+            info.className = 'server-info';
+            
             const name = document.createElement('div');
             name.className = 'server-name';
-            name.textContent = server.name;
+            name.textContent = githubInfo?.display_name || server.name;
+            
+            const repo = document.createElement('div');
+            repo.className = 'server-repo';
+            repo.textContent = server.name;
+            
+            info.appendChild(name);
+            info.appendChild(repo);
+            header.appendChild(info);
             
             const description = document.createElement('div');
             description.className = 'server-description';
@@ -389,13 +442,13 @@
             const vscodeBtn = document.createElement('a');
             vscodeBtn.className = 'install-btn vscode';
             vscodeBtn.textContent = '📦 Install in VS Code';
-            vscodeBtn.href = generateVSCodeUrl(server);
+            vscodeBtn.href = generateVSCodeUrl(server, false);
             vscodeBtn.title = 'Install in VS Code';
             
             const insidersBtn = document.createElement('a');
             insidersBtn.className = 'install-btn insiders';
             insidersBtn.textContent = '🚀 Install in Insiders';
-            insidersBtn.href = generateVSCodeInsidersUrl(server);
+            insidersBtn.href = generateVSCodeUrl(server, true);
             insidersBtn.title = 'Install in VS Code Insiders';
             
             installButtons.appendChild(vscodeBtn);
