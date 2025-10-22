@@ -271,18 +271,40 @@
                 args.push(firstPackage.identifier);
             }
             
-            const config = {
-                command: command,
-                args: args
+            // Build manifest without README to keep URL short
+            const publisherProvided = serverData._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
+            const githubInfo = publisherProvided?.github;
+            
+            const manifest = {
+                name: serverData.name,
+                displayName: githubInfo?.display_name || serverData.name,
+                description: serverData.description || 'MCP Server',
+                publisher: serverData.name.split('/')[0],
+                version: serverData.version || '1.0.0',
+                icon: githubInfo?.owner_avatar_url || githubInfo?.preferred_image,
+                license: githubInfo?.license || 'MIT',
+                repository: serverData.repository?.url || `https://github.com/${serverData.name}`,
+                homepage: githubInfo?.homepage_url || serverData.repository?.url,
+                config: {
+                    command: command,
+                    args: args
+                }
             };
             
-            const name = serverData.name.split('/').pop();
-            const encodedConfig = encodeURIComponent(JSON.stringify(config));
-            return `https://vscode.dev/redirect/mcp/install?name=${encodeURIComponent(name)}&config=${encodedConfig}`;
+            // Add topics as keywords if available (limit to keep URL size down)
+            if (githubInfo?.topics && githubInfo.topics.length > 0) {
+                manifest.keywords = githubInfo.topics.slice(0, 5);
+            }
+            
+            const encodedManifest = encodeURIComponent(JSON.stringify(manifest));
+            return `vscode:mcp/install?${encodedManifest}`;
         }
         
         function generateVSCodeInsidersUrl(serverData) {
-            // Same logic as VS Code but with insiders URL
+            // Build manifest without README to keep URL short
+            const publisherProvided = serverData._meta?.['io.modelcontextprotocol.registry/publisher-provided'];
+            const githubInfo = publisherProvided?.github;
+            
             let command = 'npx';
             let args = ['-y'];
             
@@ -296,14 +318,29 @@
                 args.push(firstPackage.identifier);
             }
             
-            const config = {
-                command: command,
-                args: args
+            const manifest = {
+                name: serverData.name,
+                displayName: githubInfo?.display_name || serverData.name,
+                description: serverData.description || 'MCP Server',
+                publisher: serverData.name.split('/')[0],
+                version: serverData.version || '1.0.0',
+                icon: githubInfo?.owner_avatar_url || githubInfo?.preferred_image,
+                license: githubInfo?.license || 'MIT',
+                repository: serverData.repository?.url || `https://github.com/${serverData.name}`,
+                homepage: githubInfo?.homepage_url || serverData.repository?.url,
+                config: {
+                    command: command,
+                    args: args
+                }
             };
             
-            const name = serverData.name.split('/').pop();
-            const encodedConfig = encodeURIComponent(JSON.stringify(config));
-            return `https://insiders.vscode.dev/redirect/mcp/install?name=${encodeURIComponent(name)}&quality=insiders&config=${encodedConfig}`;
+            // Add topics as keywords if available (limit to keep URL size down)
+            if (githubInfo?.topics && githubInfo.topics.length > 0) {
+                manifest.keywords = githubInfo.topics.slice(0, 5);
+            }
+            
+            const encodedManifest = encodeURIComponent(JSON.stringify(manifest));
+            return `vscode-insiders:mcp/install?${encodedManifest}`;
         }
         
         // Function to create a server tile
