@@ -231,11 +231,6 @@ async function loadServers(versionFilter = 'all') {
             versions.push('v0');
         }
         
-        if (versionFilter === 'all' || versionFilter === 'v0.1') {
-            fetchPromises.push(fetch('v0.1/servers'));
-            versions.push('v0.1');
-        }
-        
         const responses = await Promise.all(fetchPromises);
         
         // Collect all servers from fetched versions
@@ -258,11 +253,11 @@ async function loadServers(versionFilter = 'all') {
             return;
         }
         
-        // Remove duplicates based on server name, keeping the v0.1 version if available
+        // Remove duplicates based on server name
         const serverMap = new Map();
         allServers.forEach(server => {
             const existing = serverMap.get(server.name);
-            if (!existing || server._source === 'v0.1') {
+            if (!existing) {
                 serverMap.set(server.name, server);
             }
         });
