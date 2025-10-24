@@ -190,6 +190,10 @@ function createServerTile(server) {
 // Function to create stats display
 function createStats(servers) {
     const statsContainer = document.getElementById('stats-container');
+    
+    // Clear any existing stats before creating new ones
+    statsContainer.innerHTML = '';
+    
     const stats = document.createElement('div');
     stats.className = 'stats';
     
