@@ -1,3 +1,42 @@
+// Theme switching functionality
+function initTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const body = document.body;
+    
+    // Check if elements exist
+    if (!themeToggle || !themeIcon) {
+        console.warn('Theme toggle elements not found');
+        return;
+    }
+    
+    // Check for saved theme preference or default to light mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    
+    // Apply the theme
+    if (currentTheme === 'dark') {
+        body.classList.add('dark-mode');
+        themeIcon.textContent = '☀️';
+    } else {
+        body.classList.remove('dark-mode');
+        themeIcon.textContent = '🌙';
+    }
+    
+    // Toggle theme on button click
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        
+        // Update icon and save preference
+        if (body.classList.contains('dark-mode')) {
+            themeIcon.textContent = '☀️';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            themeIcon.textContent = '🌙';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+}
+
 // Function to generate VS Code installation URL
 // For Insiders, use 'vscode-insiders' instead of 'vscode'
 function generateVSCodeUrl(serverData, isInsiders = false) {
@@ -289,6 +328,9 @@ async function loadServers(versionFilter = 'all') {
 
 // Load servers when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize theme
+    initTheme();
+    
     loadServers();
     
     // Add event listener to version selector
