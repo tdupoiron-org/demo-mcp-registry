@@ -348,11 +348,11 @@ h2 {
     font-weight: 700;
     margin-bottom: 4px;
     word-break: break-word;
+    color: var(--text-primary);
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    color: var(--text-primary);
 }
 
 @media (max-width: 768px) {

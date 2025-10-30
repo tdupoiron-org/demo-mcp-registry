@@ -4,6 +4,12 @@ function initTheme() {
     const themeIcon = document.getElementById('theme-icon');
     const body = document.body;
     
+    // Check if elements exist
+    if (!themeToggle || !themeIcon) {
+        console.warn('Theme toggle elements not found');
+        return;
+    }
+    
     // Check for saved theme preference or default to light mode
     const currentTheme = localStorage.getItem('theme') || 'light';
     
